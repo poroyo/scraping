@@ -9,20 +9,26 @@ use std::sync::{
     Arc, Mutex,
 };
 
-const ALL_PAGES: usize = 132;
+// const ALL_PAGES: usize = 132;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // https://api.venusai.chat/characters?page=1
+    let mut user_input = String::new();
+    print!("Pages...: ");
+    std::io::stdout().flush()?;
+    std::io::stdin().read_line(&mut user_input)?;
+    let all_pages = user_input.trim().parse::<usize>()?;
+
     let start = std::time::Instant::now();
-    let vecs = Arc::new(Mutex::new(Vec::with_capacity(ALL_PAGES)));
+    let vecs = Arc::new(Mutex::new(Vec::with_capacity(all_pages)));
     // let mut file_exe_vecs = Vec::with_capacity(ALL_CHARA);
     let pages = Arc::new(AtomicU8::new(1));
 
     let client = Client::new();
-    let mut tasks = Vec::with_capacity(ALL_PAGES);
+    let mut tasks = Vec::with_capacity(all_pages);
 
-    for page in 1..=ALL_PAGES {
+    for page in 1..=all_pages {
         let client = client.clone();
         let vecs = Arc::clone(&vecs);
         let pages = Arc::clone(&pages);
@@ -32,7 +38,7 @@ async fn main() -> Result<(), Error> {
             let data: serde_json::Value = serde_json::from_str(res.as_str()).unwrap();
             let a = parse_json(data).await.unwrap();
             vecs.lock().unwrap().push(a);
-            println!("{pages:?}/{ALL_PAGES}");
+            println!("{pages:?}/{all_pages}");
             pages.fetch_add(1, Ordering::SeqCst);
         }));
     }
